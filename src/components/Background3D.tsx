@@ -1,297 +1,257 @@
 import { useRef, useEffect, useMemo } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Grid } from '@react-three/drei'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import * as THREE from 'three'
 
-// ── Camera rig: mouse tilt + scroll fly-through ───────────────────────────
-function CameraRig({ scrollRef }: { scrollRef: React.MutableRefObject<number> }) {
-  const { camera } = useThree()
-  const mouse = useRef({ x: 0, y: 0 })
-  const sm = useRef({ x: 0, y: 0 })   // smoothed mouse
-  const ss = useRef(0)                  // smoothed scroll
+// ── Animated colorful blob background ─────────────────────────────────────────
+const BG_VERT = `varying vec2 vUv; void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`
+const BG_FRAG = `
+  uniform float uTime;
+  varying vec2 vUv;
+  void main(){
+    vec2 uv=vUv;
+    vec3 col=vec3(0.01,0.04,0.02);
+    float b1=1.0-smoothstep(0.0,0.54,length(uv-vec2(0.22+sin(uTime*.13)*.14,0.32+cos(uTime*.11)*.13)));
+    col=mix(col,vec3(0.04,0.55,0.3),b1*.9);
+    float b2=1.0-smoothstep(0.0,0.5,length(uv-vec2(0.74+cos(uTime*.12)*.1,0.25+sin(uTime*.09)*.13)));
+    col=mix(col,vec3(0.36,0.1,0.76),b2*.88);
+    float b3=1.0-smoothstep(0.0,0.48,length(uv-vec2(0.52+sin(uTime*.1)*.17,0.75+cos(uTime*.08)*.12)));
+    col=mix(col,vec3(0.86,0.2,0.5),b3*.82);
+    float b4=1.0-smoothstep(0.0,0.44,length(uv-vec2(0.85+cos(uTime*.15)*.08,0.62+sin(uTime*.12)*.13)));
+    col=mix(col,vec3(0.9,0.44,0.06),b4*.78);
+    float b5=1.0-smoothstep(0.0,0.45,length(uv-vec2(0.16+sin(uTime*.16)*.1,0.7+cos(uTime*.13)*.1)));
+    col=mix(col,vec3(0.04,0.64,0.86),b5*.82);
+    float b6=1.0-smoothstep(0.0,0.4,length(uv-vec2(0.44+cos(uTime*.09)*.15,0.16+sin(uTime*.12)*.1)));
+    col=mix(col,vec3(0.06,0.84,0.58),b6*.72);
+    float vig=length(uv-vec2(.5))*1.6;
+    col*=1.0-vig*.6;
+    gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+  }
+`
 
+function BlobBg() {
+  const mat  = useRef<THREE.ShaderMaterial>(null)
+  const unif = useMemo(() => ({ uTime: { value: 0 } }), [])
+  useFrame(({ clock }) => { if (mat.current) mat.current.uniforms.uTime.value = clock.elapsedTime })
+  return (
+    <mesh position={[0, 0, -4]}>
+      <planeGeometry args={[36, 26]} />
+      <shaderMaterial ref={mat} vertexShader={BG_VERT} fragmentShader={BG_FRAG} uniforms={unif} />
+    </mesh>
+  )
+}
+
+// ── Camera ─────────────────────────────────────────────────────────────────────
+function CameraRig() {
+  const mouse = useRef({ x: 0, y: 0 })
+  const sm    = useRef({ x: 0, y: 0 })
   useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      mouse.current.x = (e.clientX / window.innerWidth - 0.5) * 2
+    const h = (e: MouseEvent) => {
+      mouse.current.x = (e.clientX / window.innerWidth  - 0.5) * 2
       mouse.current.y = (e.clientY / window.innerHeight - 0.5) * 2
     }
-    window.addEventListener('mousemove', onMove, { passive: true })
-    return () => window.removeEventListener('mousemove', onMove)
+    window.addEventListener('mousemove', h, { passive: true })
+    return () => window.removeEventListener('mousemove', h)
   }, [])
-
-  useFrame(() => {
-    // Smooth mouse
-    sm.current.x += (mouse.current.x - sm.current.x) * 0.04
-    sm.current.y += (mouse.current.y - sm.current.y) * 0.04
-
-    // Smooth scroll (clamp to [0, 1])
-    const raw = scrollRef.current
-    const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, 1)
-    const targetPct = Math.min(raw / maxScroll, 1)
-    ss.current += (targetPct - ss.current) * 0.045
-
-    // Fly-through: camera moves forward (−Z) as you scroll
-    camera.position.z = THREE.MathUtils.lerp(9, -22, ss.current)
-    camera.position.y = THREE.MathUtils.lerp(1.5, -1.5, ss.current)
-    camera.position.x = sm.current.x * 1.2
-
-    // Mouse-driven tilt
-    camera.rotation.y = sm.current.x * -0.07
-    camera.rotation.x = sm.current.y * 0.035 - ss.current * 0.1
+  useFrame(({ camera }) => {
+    sm.current.x += (mouse.current.x - sm.current.x) * 0.03
+    sm.current.y += (mouse.current.y - sm.current.y) * 0.03
+    camera.position.set(sm.current.x * 0.8, sm.current.y * -0.5, 7.5)
+    camera.lookAt(0, 0, 0)
   })
-
   return null
 }
 
-// ── Glowing neon document frame ───────────────────────────────────────────
-interface FrameProps {
-  pos: [number, number, number]
-  rotY?: number
-  color?: string
-  w?: number
-  h?: number
-  idx?: number
-}
+// ── Card data ──────────────────────────────────────────────────────────────────
+interface CardDef { lines: string[]; sub: string; color: string }
+const CARDS: CardDef[] = [
+  { lines: ['AKILLI',  'BELGE',   'ANALİZİ'], sub: 'Binlerce belgede saniyeler içinde doğru cevap',      color: '#34d399' },
+  { lines: ['İK',      'YÖNETİMİ'],           sub: 'İzin, maaş ve kariyer soruları otomatik yanıtlanır', color: '#22d3ee' },
+  { lines: ['HUKUK',   '& UYUM'],             sub: 'Sözleşme analizi, KVKK, iç yönetmelik sorguları',    color: '#a78bfa' },
+  { lines: ['IT',      'DESTEK'],             sub: 'L1 ticket sayısını dramatik düşür — %80 tasarruf',    color: '#f472b6' },
+  { lines: ['SATIŞ',   'GÜCÜ'],              sub: 'Ürün bilgisi, rakip analizi ve fiyat listesi anında',  color: '#2dd4bf' },
+]
 
-function DocFrame({ pos, rotY = 0, color = '#10b981', w = 1.65, h = 2.3, idx = 0 }: FrameProps) {
-  const g = useRef<THREE.Group>(null)
+// ── Canvas texture — very transparent glass so blob shows through ───────────────
+function buildTex(card: CardDef): THREE.CanvasTexture {
+  const W = 660, H = 920
+  const c = document.createElement('canvas')
+  c.width = W; c.height = H
+  const ctx = c.getContext('2d')!
 
-  useFrame((state) => {
-    if (!g.current) return
-    const t = state.clock.elapsedTime + idx * 1.6
-    g.current.position.y = pos[1] + Math.sin(t * 0.38) * 0.22
-    g.current.rotation.y = rotY + Math.sin(t * 0.11) * 0.05
+  // Nearly transparent — blob art shows through
+  ctx.clearRect(0, 0, W, H)
+  ctx.fillStyle = 'rgba(3,10,6,0.18)'
+  ctx.fillRect(0, 0, W, H)
+
+  // Glass top rim highlight
+  const tg = ctx.createLinearGradient(0, 0, 0, 100)
+  tg.addColorStop(0, 'rgba(255,255,255,0.13)')
+  tg.addColorStop(1, 'rgba(255,255,255,0.0)')
+  ctx.fillStyle = tg; ctx.fillRect(0, 0, W, 100)
+
+  // Left rim
+  const lg = ctx.createLinearGradient(0, 0, 24, 0)
+  lg.addColorStop(0, 'rgba(255,255,255,0.09)')
+  lg.addColorStop(1, 'rgba(255,255,255,0.0)')
+  ctx.fillStyle = lg; ctx.fillRect(0, 0, 24, H)
+
+  // Large bold title
+  const fz = card.lines.length >= 3 ? 108 : 128
+  ctx.textBaseline = 'top'
+  card.lines.forEach((line, i) => {
+    const y = 100 + i * (fz + 6)
+    // Drop shadow for readability
+    ctx.font = `900 ${fz}px Arial Black, Arial`
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'
+    ctx.fillText(line, 46, y + 4)
+    ctx.fillStyle = 'rgba(255,255,255,0.97)'
+    ctx.fillText(line, 44, y)
   })
 
-  const th = 0.04   // edge thickness
-  const d = 0.012   // depth
+  const titleBottom = 100 + card.lines.length * (fz + 6) + 18
 
+  // Color accent underline
+  ctx.fillStyle = card.color
+  ctx.fillRect(44, titleBottom, 100, 5)
+
+  // Subtitle
+  ctx.textBaseline = 'alphabetic'
+  ctx.fillStyle = 'rgba(255,255,255,0.75)'
+  ctx.font = '26px Arial'
+  let wds = card.sub.split(' '), ln = '', ly = titleBottom + 50
+  wds.forEach(w => {
+    const t = ln + w + ' '
+    if (ctx.measureText(t).width > W - 90 && ln) { ctx.fillText(ln, 44, ly); ln = w + ' '; ly += 36 }
+    else ln = t
+  })
+  ctx.fillText(ln.trim(), 44, ly)
+
+  // Scroll hint
+  ctx.fillStyle = card.color + 'bb'
+  ctx.font = 'bold 14px Arial'
+  ctx.fillText('↓  devam', 44, H - 44)
+
+  // Border
+  ctx.strokeStyle = card.color + '88'
+  ctx.lineWidth = 2.5
+  ctx.strokeRect(2, 2, W - 4, H - 4)
+
+  // Corner L-brackets
+  const cs = 42
+  ctx.strokeStyle = card.color; ctx.lineWidth = 3.5
+  ;([[0,0],[W,0],[0,H],[W,H]] as [number,number][]).forEach(([cx,cy]) => {
+    const sx = cx===0?1:-1, sy = cy===0?1:-1
+    ctx.beginPath()
+    ctx.moveTo(cx+sx*cs, cy+sy*2.5); ctx.lineTo(cx+sx*2.5, cy+sy*2.5); ctx.lineTo(cx+sx*2.5, cy+sy*cs)
+    ctx.stroke()
+  })
+
+  return new THREE.CanvasTexture(c)
+}
+
+// ── One card — scroll-driven fan animation ─────────────────────────────────────
+function GlassCard({ card, idx, scrollRef }: { card: CardDef; idx: number; scrollRef: React.RefObject<number> }) {
+  const group   = useRef<THREE.Group>(null)
+  const matRef  = useRef<THREE.MeshStandardMaterial>(null)
+  const texture = useMemo(() => buildTex(card), [card])
+  const W = 5.6, H = 7.8, N = CARDS.length
+
+  useFrame(() => {
+    if (!group.current || !matRef.current) return
+
+    const maxS = Math.max(document.body.scrollHeight - window.innerHeight, 1)
+    const sp   = Math.min((scrollRef.current ?? 0) / maxS, 1)
+
+    // relPos: 0 = this card is active, 1 = next up, -1 = just passed
+    const relPos = idx - sp * N
+
+    // Show only active card + one preview card peeking from right
+    // Active window: -0.3 (just exiting) to 1.5 (next preview)
+    const show = relPos > -0.35 && relPos < 1.55
+    group.current.visible = show
+    if (!show) return
+
+    const p = Math.max(-0.35, Math.min(1.5, relPos))
+
+    // Position: active sits center-left, next peeks from right edge
+    // p=0 → x=-0.6 (center-left), p=1 → x=5.2 (right edge, barely visible)
+    const tX    = p < 0 ? p * 4 - 0.6 : p * 5.8 - 0.6
+    const tZ    = p * -2.2
+    const tRotY = p * -0.44 - 0.14   // both cards tilt same direction (left-facing) like reference
+    const tSc   = p < 0 ? Math.max(0.5, 1 + p * 0.4) : Math.max(0.48, 1 - p * 0.3)
+    const tAlph = p < -0.1 ? Math.max(0, 1 + p / 0.25) : 1
+
+    const g = group.current
+    g.position.x += (tX    - g.position.x) * 0.08
+    g.position.z += (tZ    - g.position.z) * 0.08
+    g.rotation.y += (tRotY - g.rotation.y) * 0.08
+    g.scale.setScalar(g.scale.x + (tSc - g.scale.x) * 0.08)
+    matRef.current.opacity = tAlph
+  })
+
+  const th = 0.022
   return (
-    <group ref={g} position={pos}>
-      {/* Translucent face */}
+    <group ref={group}>
+      {/* Glass face */}
       <mesh>
-        <planeGeometry args={[w, h]} />
-        <meshStandardMaterial
-          color={color}
-          transparent
-          opacity={0.04}
-          side={THREE.DoubleSide}
-          emissive={color}
-          emissiveIntensity={0.06}
-        />
+        <planeGeometry args={[W, H]} />
+        <meshStandardMaterial ref={matRef} map={texture} transparent opacity={1} depthWrite={false} />
       </mesh>
 
-      {/* Neon edge tubes */}
-      {/* Top */}
-      <mesh position={[0, h / 2, 0]}>
-        <boxGeometry args={[w + th, th, d]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} metalness={0.5} roughness={0.1} />
-      </mesh>
-      {/* Bottom */}
-      <mesh position={[0, -h / 2, 0]}>
-        <boxGeometry args={[w + th, th, d]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} metalness={0.5} roughness={0.1} />
-      </mesh>
-      {/* Left */}
-      <mesh position={[-w / 2, 0, 0]}>
-        <boxGeometry args={[th, h, d]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} metalness={0.5} roughness={0.1} />
-      </mesh>
-      {/* Right */}
-      <mesh position={[w / 2, 0, 0]}>
-        <boxGeometry args={[th, h, d]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} metalness={0.5} roughness={0.1} />
-      </mesh>
-
-      {/* Corner glows (small bright cubes at corners) */}
-      {(
-        [[-1, -1], [-1, 1], [1, -1], [1, 1]] as [number, number][]
-      ).map(([sx, sy], ci) => (
-        <mesh key={ci} position={[(sx * w) / 2, (sy * h) / 2, 0]}>
-          <boxGeometry args={[th * 1.8, th * 1.8, d * 2]} />
-          <meshStandardMaterial color="#ffffff" emissive={color} emissiveIntensity={3} />
+      {/* Neon border strips */}
+      {[
+        { p:[0, H/2,0]  as [number,number,number], g:[W+th, th, 0.01] as [number,number,number] },
+        { p:[0,-H/2,0]  as [number,number,number], g:[W+th, th, 0.01] as [number,number,number] },
+        { p:[-W/2,0,0]  as [number,number,number], g:[th,   H,  0.01] as [number,number,number] },
+        { p:[ W/2,0,0]  as [number,number,number], g:[th,   H,  0.01] as [number,number,number] },
+      ].map(({ p, g }, i) => (
+        <mesh key={i} position={p}>
+          <boxGeometry args={g} />
+          <meshStandardMaterial color={card.color} emissive={card.color} emissiveIntensity={5} />
         </mesh>
       ))}
+
+      {/* Corner glow spheres */}
+      {([[-1,-1],[1,-1],[-1,1],[1,1]] as [number,number][]).map(([sx,sy], ci) => (
+        <mesh key={ci} position={[(sx*W)/2, (sy*H)/2, 0.01]}>
+          <sphereGeometry args={[0.065, 8, 8]} />
+          <meshStandardMaterial color="#ffffff" emissive={card.color} emissiveIntensity={9} />
+        </mesh>
+      ))}
+
+      <pointLight color={card.color} intensity={2.5} distance={5} decay={2} />
     </group>
   )
 }
 
-// ── Particle cloud ────────────────────────────────────────────────────────
-function Particles() {
-  const ref = useRef<THREE.Points>(null)
-  const COUNT = 800
-
-  const [positions, colors] = useMemo(() => {
-    const pos = new Float32Array(COUNT * 3)
-    const col = new Float32Array(COUNT * 3)
-
-    // Emerald / green palette
-    const palette = [
-      new THREE.Color('#34d399'),
-      new THREE.Color('#10b981'),
-      new THREE.Color('#059669'),
-      new THREE.Color('#047857'),
-      new THREE.Color('#6ee7b7'),
-    ]
-
-    for (let i = 0; i < COUNT; i++) {
-      pos[i * 3]     = (Math.random() - 0.5) * 55
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 28
-      pos[i * 3 + 2] = Math.random() * -50 + 12   // spread along Z so they appear as you fly
-
-      const c = palette[Math.floor(Math.random() * palette.length)]
-      col[i * 3]     = c.r
-      col[i * 3 + 1] = c.g
-      col[i * 3 + 2] = c.b
-    }
-
-    return [pos, col]
-  }, [])
-
-  useFrame((s) => {
-    if (!ref.current) return
-    ref.current.rotation.y = s.clock.elapsedTime * 0.004
-  })
-
-  return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-        <bufferAttribute attach="attributes-color"    args={[colors, 3]}    />
-      </bufferGeometry>
-      <pointsMaterial size={0.055} vertexColors transparent opacity={0.8} sizeAttenuation />
-    </points>
-  )
-}
-
-// ── Horizontal scan rings (give motion feel) ──────────────────────────────
-function ScanRings() {
-  const ring1 = useRef<THREE.Mesh>(null)
-  const ring2 = useRef<THREE.Mesh>(null)
-
-  useFrame((s) => {
-    const t = s.clock.elapsedTime
-    if (ring1.current) {
-      ring1.current.position.z = -5 - ((t * 3) % 30)
-      ring1.current.scale.setScalar(1 + Math.sin(t * 0.5) * 0.08)
-    }
-    if (ring2.current) {
-      ring2.current.position.z = -5 - (((t + 15) * 3) % 30)
-      ring2.current.scale.setScalar(1 + Math.sin(t * 0.5 + Math.PI) * 0.08)
-    }
-  })
-
-  const ringMat = (
-    <meshStandardMaterial
-      color="#34d399"
-      emissive="#34d399"
-      emissiveIntensity={1.2}
-      transparent
-      opacity={0.18}
-      side={THREE.DoubleSide}
-      wireframe
-    />
-  )
-
+// ── Scene ──────────────────────────────────────────────────────────────────────
+function Scene({ scrollRef }: { scrollRef: React.RefObject<number> }) {
   return (
     <>
-      <mesh ref={ring1} position={[0, 0, -5]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[10, 0.04, 6, 80]} />
-        {ringMat}
-      </mesh>
-      <mesh ref={ring2} position={[0, 0, -5]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[14, 0.04, 6, 80]} />
-        {ringMat}
-      </mesh>
-    </>
-  )
-}
-
-// ── 3-D scene ─────────────────────────────────────────────────────────────
-function Scene({ scrollRef }: { scrollRef: React.MutableRefObject<number> }) {
-  return (
-    <>
-      <CameraRig scrollRef={scrollRef} />
-
-      {/* Atmospheric depth fog */}
-      <fog attach="fog" args={['#050a07', 12, 50]} />
-
-      {/* Lights */}
+      <color attach="background" args={['#020603']} />
+      <CameraRig />
       <ambientLight intensity={0.04} />
-      <pointLight position={[-4, 5, 2]}   color="#047857" intensity={12} distance={25} decay={2} />
-      <pointLight position={[5, 3, -5]}   color="#34d399" intensity={8}  distance={25} decay={2} />
-      <pointLight position={[0, 8, -12]}  color="#059669" intensity={6}  distance={30} decay={2} />
-      <pointLight position={[-6, 2, -20]} color="#10b981" intensity={5}  distance={30} decay={2} />
-
-      {/* Infinite neon grid floor */}
-      <Grid
-        position={[0, -4, -5]}
-        args={[100, 100]}
-        cellSize={1.5}
-        cellThickness={0.5}
-        cellColor="#022c22"
-        sectionSize={6}
-        sectionThickness={1.1}
-        sectionColor="#047857"
-        fadeDistance={45}
-        fadeStrength={2.5}
-        infiniteGrid
-      />
-
-      {/* Scan rings flying past you */}
-      <ScanRings />
-
-      {/* Document panels — arranged along Z so you fly through them on scroll */}
-      {/* Near row */}
-      <DocFrame pos={[-3.8,  1.0, -3]}  rotY={0.35}  color="#34d399" idx={0} />
-      <DocFrame pos={[4.2,   0.5, -5]}  rotY={-0.3}  color="#10b981" idx={1} />
-
-      {/* Middle row */}
-      <DocFrame pos={[-5.5,  1.5, -9]}  rotY={0.55}  color="#34d399" idx={2} w={1.4} h={2.0} />
-      <DocFrame pos={[5.8,   2.0, -12]} rotY={-0.45} color="#059669" idx={3} />
-      <DocFrame pos={[-1.5,  0.0, -15]} rotY={0.15}  color="#10b981" idx={4} w={1.9} h={2.6} />
-
-      {/* Far row */}
-      <DocFrame pos={[2.5,   1.5, -19]} rotY={-0.25} color="#34d399" idx={5} />
-      <DocFrame pos={[-6.5,  0.5, -23]} rotY={0.7}   color="#059669" idx={6} w={1.3} h={1.9} />
-      <DocFrame pos={[6.5,   1.0, -27]} rotY={-0.5}  color="#10b981" idx={7} />
-      <DocFrame pos={[0,     2.5, -32]} rotY={0.1}   color="#34d399" idx={8} w={2.2} h={3.0} />
-
-      {/* Very far row — visible at deep scroll */}
-      <DocFrame pos={[-4, 1, -38]} rotY={0.4}  color="#059669" idx={9} />
-      <DocFrame pos={[4,  0, -44]} rotY={-0.3} color="#34d399" idx={10} />
-
-      {/* Particles */}
-      <Particles />
+      <BlobBg />
+      {CARDS.map((d, i) => <GlassCard key={i} card={d} idx={i} scrollRef={scrollRef} />)}
+      <EffectComposer>
+        <Bloom intensity={1.4} luminanceThreshold={0.1} luminanceSmoothing={0.9} mipmapBlur />
+      </EffectComposer>
     </>
   )
 }
 
-// ── Exported wrapper ──────────────────────────────────────────────────────
+// ── Export ────────────────────────────────────────────────────────────────────
 export default function Background3D() {
-  const scrollRef = useRef(0)
-
+  const scrollRef = useRef<number>(0)
   useEffect(() => {
-    const onScroll = () => { scrollRef.current = window.scrollY }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const h = () => { scrollRef.current = window.scrollY }
+    window.addEventListener('scroll', h, { passive: true })
+    return () => window.removeEventListener('scroll', h)
   }, [])
-
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 0,
-        pointerEvents: 'none',
-      }}
-    >
-      <Canvas
-        camera={{ position: [0, 1.5, 9], fov: 62 }}
-        dpr={[1, 1.5]}
-        gl={{ antialias: true, alpha: false }}
-        style={{ background: '#050a07' }}
-      >
+    <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none' }}>
+      <Canvas camera={{ position: [0, 0, 7.5], fov: 65 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: false }}>
         <Scene scrollRef={scrollRef} />
       </Canvas>
     </div>

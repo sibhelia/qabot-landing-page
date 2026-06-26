@@ -265,15 +265,11 @@
   background-size: 28px 28px;
 }
 
-/* Section overlay — semi-transparent so 3D bg shows through */
+/* Section overlay — fully opaque, 3D bg only visible in hero */
 .section-bg {
-  background: rgba(5, 10, 7, 0.78);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  background: #060c08;
 }
 
 .section-bg-dark {
-  background: rgba(5, 10, 7, 0.88);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: #050a07;
 }

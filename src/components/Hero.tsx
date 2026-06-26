@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion'
-import FloatingDocs from './FloatingDocs'
 
 const WORDS = ['Asistana', 'Zekaya', 'Cevaba']
 
@@ -148,64 +147,6 @@ export default function Hero() {
             </motion.div>
           </motion.div>
 
-          {/* ── Right: floating HTML documents (CSS 3D, layered over Three.js scene) ── */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1.2, delay: 0.6 }}
-            style={{ x: docsX, y: docsY, height: 560 }}
-            className="relative hidden lg:block"
-          >
-            <FloatingDocs />
-
-            {/* Chat preview card */}
-            <motion.div
-              initial={{ opacity: 0, x: -30 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 1.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute left-0 top-1/2 -translate-y-1/2 w-60"
-              style={{
-                background: 'rgba(5,10,7,0.88)',
-                border: '1px solid rgba(52,211,153,0.2)',
-                borderRadius: 16,
-                padding: 16,
-                backdropFilter: 'blur(20px)',
-                boxShadow: '0 8px 40px rgba(4,120,87,0.2)',
-              }}
-            >
-              <div className="flex justify-end mb-3">
-                <div
-                  className="max-w-[80%] px-3 py-2 rounded-xl rounded-br-md text-xs text-white"
-                  style={{ background: 'linear-gradient(135deg, #047857, #059669)' }}
-                >
-                  Yıllık izin hakkım kaç gün?
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <div
-                  className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[7px] font-black mt-0.5 text-white"
-                  style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
-                >
-                  Q
-                </div>
-                <div
-                  className="flex-1 px-3 py-2 rounded-xl rounded-tl-md text-[10px] leading-relaxed"
-                  style={{ background: 'rgba(52,211,153,0.07)', border: '1px solid rgba(52,211,153,0.15)', color: 'rgba(255,255,255,0.75)' }}
-                >
-                  <span className="inline-flex gap-0.5 mr-1">
-                    {[0,1,2].map(i => (
-                      <span key={i} className="w-1 h-1 rounded-full bg-em-400 animate-bounce inline-block" style={{ animationDelay: `${i*0.15}s` }} />
-                    ))}
-                  </span>
-                  14 iş günü. 5+ yılda 20 güne çıkıyor. 📋
-                </div>
-              </div>
-              <div className="mt-3 flex items-center gap-1.5">
-                <span className="w-1 h-1 rounded-full bg-em-400 animate-pulse" />
-                <span className="text-[9px]" style={{ color: 'rgba(255,255,255,0.3)' }}>İK Politikaları 2025.pdf — kaynak</span>
-              </div>
-            </motion.div>
-          </motion.div>
         </div>
       </div>
 
