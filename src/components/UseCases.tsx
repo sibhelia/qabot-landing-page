@@ -1,197 +1,225 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Users, Scale, Headphones, GraduationCap, Bot, User } from 'lucide-react'
+import { GradientText } from './GradientText'
 
-const cases = [
+const USE_CASES = [
   {
-    id: 'hr',
+    id: 'ik',
     label: 'İnsan Kaynakları',
-    emoji: '👥',
+    icon: Users,
+    color: '#a855f7',
+    colorBg: 'rgba(168,85,247,0.1)',
+    colorBorder: 'rgba(168,85,247,0.3)',
+    headline: 'HR artık aynı soruya cevap vermek zorunda değil',
+    stat: '73% daha az tekrar soru',
+    statColor: '#a855f7',
+    q: 'Yıllık iznim kaç gün kaldı?',
+    a: 'Bu yıl 14 günlük hakkınızdan 9 gün kullandınız. Kalan: 5 iş günü. İzin talebinizi HR portalından iletebilirsiniz.',
+    source: 'IK_Politikasi_2024.pdf • Sayfa 12',
+  },
+  {
+    id: 'hukuk',
+    label: 'Hukuki Uyum',
+    icon: Scale,
+    color: '#60a5fa',
+    colorBg: 'rgba(96,165,250,0.1)',
+    colorBorder: 'rgba(96,165,250,0.3)',
+    headline: 'Binlerce sayfalık mevzuatı saniyede tarıyın',
+    stat: '%94+ doğruluk oranı',
+    statColor: '#60a5fa',
+    q: "KVKK'ya göre kişisel veri saklama süremiz nedir?",
+    a: 'KVKK Madde 7 uyarınca kişisel veriler amaç sona erince 30 gün içinde silinmeli veya anonim hale getirilmelidir.',
+    source: 'KVKK_Uyum_Rehberi.pdf • Sayfa 23',
+  },
+  {
+    id: 'musteri',
+    label: 'Müşteri Hizmetleri',
+    icon: Headphones,
+    color: '#22d3ee',
+    colorBg: 'rgba(34,211,238,0.1)',
+    colorBorder: 'rgba(34,211,238,0.3)',
+    headline: 'Temsilciler doğru cevaba 2 saniyede ulaşır',
+    stat: 'Ort. 2.1 sn yanıt süresi',
+    statColor: '#22d3ee',
+    q: 'XR-200 ürünü hangi voltajda çalışıyor?',
+    a: "XR-200 modeli 110V-240V evrensel voltaj desteğine sahiptir. Adaptör gerektirmez, 50 ülkede kullanılabilir.",
+    source: 'XR200_Teknik_Katalog.pdf • Sayfa 4',
+  },
+  {
+    id: 'onboarding',
+    label: 'Yeni Çalışan',
+    icon: GraduationCap,
     color: '#34d399',
-    glow: 'rgba(52,211,153,0.15)',
-    heading: 'İK Asistanı',
-    subheading: '"HR artık aynı soruları defalarca yanıtlamıyor"',
-    description:
-      'İzin politikaları, maaş avansı koşulları, performans değerlendirme süreci... Çalışanlar her gün aynı soruları soruyor. QABot ile bu sorular artık otomatik yanıtlanıyor.',
-    benefits: [
-      'İzin hakkı ve maaş soruları anında yanıtlanır',
-      'Yeni çalışan onboarding süreci kısalır',
-      'İK ekibi stratejik işlere odaklanabilir',
-    ],
-    chatExample: {
-      q: 'Yıllık izin hakkım kaç gün?',
-      a: 'Şirket politikasına göre 1 yılı dolduran çalışanlar 14 iş günü yıllık izin hakkına sahiptir. 5 yıl üzeri için bu süre 20 güne çıkmaktadır. Kaynak: İzin Politikası v3.2, Madde 4.',
-    },
-  },
-  {
-    id: 'legal',
-    label: 'Hukuk & Uyum',
-    emoji: '⚖️',
-    color: '#10b981',
-    glow: 'rgba(16,185,129,0.15)',
-    heading: 'Hukuk Asistanı',
-    subheading: '"Kontrat sorularına anında cevap"',
-    description:
-      'Avukat saatlerini rutin sözleşme sorularıyla harcamayın. Standart madde yorumları, KVKK uyumu kontrolü ve iç yönetmelik sorguları QABot ile saniyeler içinde yapılır.',
-    benefits: [
-      'Standart sözleşme soruları otomatik yanıtlanır',
-      'KVKK ve uyum soruları anlık cevaplanır',
-      'Avukat saatleri kritik işlere ayrılır',
-    ],
-    chatExample: {
-      q: 'NDA süresi kaç yıl?',
-      a: 'Standart NDA şablonumuza göre gizlilik yükümlülüğü imza tarihinden itibaren 3 yıl geçerlidir. İlgili madde: Madde 7.1. Kaynak: NDA Şablonu v2024.',
-    },
-  },
-  {
-    id: 'it',
-    label: 'IT & Teknik Destek',
-    emoji: '💻',
-    color: '#059669',
-    glow: 'rgba(5,150,105,0.15)',
-    heading: 'IT Help Desk',
-    subheading: '"Tekrar eden ticket\'lar artık yok"',
-    description:
-      'VPN kurulumu, şifre sıfırlama, yazılım kurulum talimatları... IT ekibinin zamanının %60\'ı bu sorulara gidiyor. QABot ile çalışanlar kendi kendine çözüyor.',
-    benefits: [
-      'L1 ticket sayısı dramatik düşer',
-      'Çalışanlar 7/24 teknik destek alır',
-      'IT ekibi altyapı projelerine odaklanır',
-    ],
-    chatExample: {
-      q: 'VPN\'e nasıl bağlanırım?',
-      a: 'Cisco AnyConnect uygulamasını açın, sunucu adını "vpn.sirket.com" olarak girin ve kurumsal kullanıcı adınızla giriş yapın. Sorun yaşarsanız IT@sirket.com ile iletişime geçin. Kaynak: IT Kullanım Kılavuzu, Bölüm 3.',
-    },
-  },
-  {
-    id: 'sales',
-    label: 'Satış & CRM',
-    emoji: '📈',
-    color: '#6ee7b7',
-    glow: 'rgba(110,231,183,0.12)',
-    heading: 'Satış Asistanı',
-    subheading: '"Her müşteri toplantısında hazır bilgi"',
-    description:
-      'Ürün özellikleri, fiyat listeleri, rakip karşılaştırmaları, müşteri sunumları... Satış ekibi artık iç bilgiye saniyeler içinde ulaşıyor ve daha fazla satış yapıyor.',
-    benefits: [
-      'Ürün soruları anında yanıtlanır',
-      'Rakip karşılaştırması hızlı yapılır',
-      'Satış süreci hızlanır, kapanma artar',
-    ],
-    chatExample: {
-      q: 'Pro plan ile Enterprise plan arasındaki fark ne?',
-      a: 'Pro plan 2.000 kredi/ay ile bireysel şirketler için idealdir. Enterprise planda sınırsız kredi, dedicated altyapı, özel SSO ve %99.9 SLA garantisi bulunur. Kaynak: Fiyat Listesi Q3-2025.',
-    },
+    colorBg: 'rgba(52,211,153,0.1)',
+    colorBorder: 'rgba(52,211,153,0.3)',
+    headline: '5 dakikada şirketi tanı, hemen üretime geç',
+    stat: '3x daha hızlı onboarding',
+    statColor: '#34d399',
+    q: 'Şirket aracı nasıl kullanılır, kaza anında ne yapmalıyım?',
+    a: 'Şirket araçları yalnızca iş amaçlı kullanım içindir. Kaza durumunda 0850 XXX XX XX numarasını arayın.',
+    source: 'Yeni_Calisan_El_Kitabi.pdf • Sayfa 31',
   },
 ]
 
 export default function UseCases() {
-  const [active, setActive] = useState(cases[0].id)
-  const current = cases.find((c) => c.id === active)!
+  const [active, setActive] = useState(USE_CASES[0].id)
+  const current = USE_CASES.find(c => c.id === active)!
 
   return (
-    <section id="use-cases" className="relative py-32 overflow-hidden">
-      <div className="absolute inset-0 section-bg-dark" />
-      <div className="absolute inset-0 bg-grid opacity-20" />
+    <section id="use-cases" className="relative py-32 overflow-hidden section-bg">
+      <div
+        className="absolute inset-0 opacity-[0.03]"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(124,58,237,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(124,58,237,0.5) 1px, transparent 1px)',
+          backgroundSize: '64px 64px',
+        }}
+      />
 
       <div className="relative max-w-7xl mx-auto px-6">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.6 }}
+          viewport={{ once: true, margin: '-70px' }}
+          transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-16"
         >
           <span className="section-label mb-4 inline-flex">
-            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#34d399' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block" />
             Kullanım Alanları
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black mt-4 tracking-tight">
+          <h2 className="text-4xl sm:text-5xl font-bold mt-4 tracking-tight" style={{ fontFamily: 'Space Grotesk, Inter, sans-serif' }}>
             <span className="text-white">Her Departmana </span>
-            <span className="gradient-text">Özel Çözüm</span>
+            <GradientText>Özel Çözüm</GradientText>
           </h2>
-          <p className="mt-5 text-gray-400 text-lg max-w-xl mx-auto">
-            Tek platform, dört farklı departman — hepsi kendi özel bilgi bankasıyla çalışıyor.
+          <p className="mt-5 text-slate-400 text-lg max-w-xl mx-auto">
+            Tek platform, dört farklı departman — hepsi kendi özel bilgi bankasıyla.
           </p>
         </motion.div>
 
-        {/* Tab buttons */}
+        {/* Tab list */}
         <div className="flex flex-wrap justify-center gap-3 mb-12">
-          {cases.map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setActive(c.id)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200"
-              style={
-                active === c.id
-                  ? { background: `${c.color}18`, color: c.color, border: `1px solid ${c.color}50` }
-                  : { background: 'rgba(255,255,255,0.03)', color: '#6b7280', border: '1px solid rgba(255,255,255,0.07)' }
-              }
-            >
-              <span>{c.emoji}</span>
-              {c.label}
-            </button>
-          ))}
+          {USE_CASES.map(c => {
+            const Icon = c.icon
+            return (
+              <button
+                key={c.id}
+                onClick={() => setActive(c.id)}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200"
+                style={
+                  active === c.id
+                    ? { background: c.colorBg, color: c.color, border: `1px solid ${c.colorBorder}` }
+                    : { background: 'rgba(255,255,255,0.03)', color: '#6b7280', border: '1px solid rgba(255,255,255,0.07)' }
+                }
+              >
+                <Icon className="w-4 h-4" />
+                {c.label}
+              </button>
+            )
+          })}
         </div>
 
         {/* Content panel */}
         <AnimatePresence mode="wait">
           <motion.div
             key={active}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start"
           >
-            {/* Left: text content */}
+            {/* Left: text */}
             <div>
-              <h3 className="text-3xl font-black text-white mb-2">{current.heading}</h3>
-              <p className="text-base italic mb-6" style={{ color: current.color }}>{current.subheading}</p>
-              <p className="text-gray-400 leading-relaxed mb-8">{current.description}</p>
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-4"
+                style={{ background: current.colorBg, color: current.color, border: `1px solid ${current.colorBorder}` }}
+              >
+                {current.stat}
+              </div>
+              <h3 className="text-3xl font-bold text-white mb-4" style={{ fontFamily: 'Space Grotesk, Inter, sans-serif' }}>
+                {current.headline}
+              </h3>
 
-              <ul className="space-y-3">
-                {current.benefits.map((b) => (
+              <ul className="space-y-3 mt-6">
+                {['Belge bazlı doğru kaynak gösterimi', 'Streaming yanıt — 2 saniyede sonuç', '7/24 erişim, sıfır bekleme süresi'].map(b => (
                   <li key={b} className="flex items-start gap-3">
-                    <span className="mt-0.5 w-5 h-5 flex-shrink-0 rounded-full flex items-center justify-center" style={{ background: `${current.color}18` }}>
+                    <span
+                      className="mt-0.5 w-5 h-5 flex-shrink-0 rounded-full flex items-center justify-center"
+                      style={{ background: current.colorBg }}
+                    >
                       <svg className="w-3 h-3" style={{ color: current.color }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                       </svg>
                     </span>
-                    <span className="text-gray-300 text-sm">{b}</span>
+                    <span className="text-slate-300 text-sm">{b}</span>
                   </li>
                 ))}
               </ul>
             </div>
 
             {/* Right: chat mockup */}
-            <div className="glass rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-5 pb-4 border-b border-white/5">
-                <div className="w-2 h-2 rounded-full" style={{ background: current.color, boxShadow: `0 0 8px ${current.color}` }} />
-                <span className="text-xs font-mono text-gray-400">QABot — {current.label}</span>
+            <div
+              className="rounded-2xl p-6 border backdrop-blur-sm"
+              style={{
+                background: 'rgba(255,255,255,0.025)',
+                borderColor: current.colorBorder,
+              }}
+            >
+              <div className="flex items-center gap-2 mb-5 pb-4 border-b border-white/[0.05]">
+                <div
+                  className="w-2 h-2 rounded-full"
+                  style={{ background: current.color, boxShadow: `0 0 8px ${current.color}` }}
+                />
+                <span className="text-xs font-mono text-slate-400">QABot — {current.label}</span>
               </div>
 
               {/* User message */}
               <div className="flex justify-end mb-4">
-                <div className="bg-white/5 border border-white/8 rounded-2xl rounded-tr-sm px-4 py-3 max-w-[80%]">
-                  <p className="text-sm text-gray-200">{current.chatExample.q}</p>
+                <div className="flex items-end gap-2 max-w-[80%]">
+                  <div
+                    className="px-4 py-2.5 rounded-2xl rounded-br-sm text-white text-sm leading-relaxed"
+                    style={{ background: `${current.color}22`, border: `1px solid ${current.colorBorder}` }}
+                  >
+                    {current.q}
+                  </div>
+                  <div className="w-6 h-6 rounded-full bg-slate-700 flex-shrink-0 flex items-center justify-center">
+                    <User className="w-3 h-3 text-slate-300" />
+                  </div>
                 </div>
               </div>
 
               {/* Bot reply */}
-              <div className="flex items-start gap-3">
-                <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-black" style={{ background: `${current.color}20`, color: current.color, border: `1px solid ${current.color}30` }}>
-                  Q
+              <div className="flex items-end gap-2">
+                <div
+                  className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center"
+                  style={{ background: current.colorBg, border: `1px solid ${current.colorBorder}` }}
+                >
+                  <Bot className="w-3.5 h-3.5" style={{ color: current.color }} />
                 </div>
-                <div className="rounded-2xl rounded-tl-sm px-4 py-3 max-w-[85%]" style={{ background: `${current.color}08`, border: `1px solid ${current.color}20` }}>
-                  <p className="text-sm text-gray-300 leading-relaxed">{current.chatExample.a}</p>
+                <div className="max-w-[85%]">
+                  <div
+                    className="px-4 py-2.5 rounded-2xl rounded-bl-sm text-slate-300 text-sm leading-relaxed"
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+                  >
+                    {current.a}
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1.5 px-1">
+                    <div className="w-1 h-1 rounded-full" style={{ background: current.color }} />
+                    <span className="text-[10px] text-slate-500 font-mono">{current.source}</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-5 pt-4 border-t border-white/5 flex items-center gap-2">
-                <div className="flex-1 bg-white/3 border border-white/8 rounded-xl px-4 py-2.5 text-xs text-gray-600 font-mono">
+              {/* Input */}
+              <div className="mt-5 pt-4 border-t border-white/[0.05] flex items-center gap-2">
+                <div className="flex-1 bg-white/[0.03] border border-white/[0.07] rounded-xl px-4 py-2.5 text-xs text-slate-600 font-mono">
                   Soru sor...
                 </div>
-                <button className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${current.color}18`, border: `1px solid ${current.color}30` }}>
+                <button
+                  className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 hover:scale-110"
+                  style={{ background: current.colorBg, border: `1px solid ${current.colorBorder}` }}
+                >
                   <svg className="w-4 h-4" style={{ color: current.color }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
                   </svg>

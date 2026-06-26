@@ -1,112 +1,99 @@
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { GradientText } from './GradientText'
+import { Check } from 'lucide-react'
 
-const plans = [
+const PLANS = [
   {
     name: 'Starter',
-    price: { monthly: 299, annual: 249 },
+    monthly: 299,
+    yearly: 249,
     credits: '500 kredi/ay',
-    description: 'Küçük ekipler ve POC projeler için mükemmel başlangıç noktası.',
+    description: 'Küçük ekipler ve POC projeler için mükemmel başlangıç.',
     color: '#6b7280',
-    features: [
-      '500 AI kredi/ay',
-      '5 GB belge depolama',
-      'PDF, DOCX, TXT desteği',
-      'Temel admin paneli',
-      'E-posta desteği',
-      'QR kod paylaşımı',
-    ],
+    colorBg: 'rgba(107,114,128,0.1)',
+    colorBorder: 'rgba(107,114,128,0.2)',
+    features: ['500 AI kredi/ay', '5 GB belge depolama', 'PDF, DOCX, TXT desteği', 'Temel admin paneli', '1 admin kullanıcı', 'Email desteği'],
     cta: 'Başla',
     popular: false,
   },
   {
     name: 'Pro',
-    price: { monthly: 799, annual: 649 },
+    monthly: 799,
+    yearly: 649,
     credits: '2.000 kredi/ay',
     description: 'Büyüyen şirketler için güçlü özellikler ve yüksek kapasite.',
-    color: '#34d399',
-    features: [
-      '2.000 AI kredi/ay',
-      '50 GB belge depolama',
-      'Tüm dosya formatları',
-      'Vision AI (görsel analiz)',
-      'Hiyerarşik bilgi bankası',
-      'Duygu analizi & raporlar',
-      'Marka özelleştirme',
-      'Öncelikli destek',
-    ],
-    cta: "Pro'ya Geç",
+    color: '#a855f7',
+    colorBg: 'rgba(168,85,247,0.1)',
+    colorBorder: 'rgba(168,85,247,0.4)',
+    features: ['2.000 AI kredi/ay', '50 GB belge depolama', 'Tüm dosya formatları', 'Vision AI (görsel analiz)', 'Gelişmiş analitik', 'QR kod paylaşımı', 'Marka özelleştirme', '5 admin kullanıcı', 'Öncelikli destek'],
+    cta: 'Ücretsiz Dene',
     popular: true,
   },
   {
     name: 'Enterprise',
-    price: { monthly: null, annual: null },
-    credits: 'Sınırsız',
+    monthly: null,
+    yearly: null,
+    credits: 'Sınırsız kredi',
     description: 'Büyük kurumlar için özel çözüm, SLA ve tam kontrol.',
-    color: '#10b981',
-    features: [
-      'Sınırsız AI kredisi',
-      'Sınırsız depolama',
-      'Özel alt domain / SSO',
-      'Multi-tenant yönetimi',
-      'Özel LLM entegrasyonu',
-      'Dedicated altyapı',
-      '%99.9 SLA garantisi',
-      '7/24 teknik destek',
-    ],
-    cta: 'İletişime Geç',
+    color: '#22d3ee',
+    colorBg: 'rgba(34,211,238,0.1)',
+    colorBorder: 'rgba(34,211,238,0.2)',
+    features: ['Sınırsız AI kredisi', 'Sınırsız depolama', 'Özel LLM entegrasyonu', 'SSO / LDAP', 'SLA garantisi', 'On-premise seçeneği', 'Sınırsız admin', 'Dedicated support'],
+    cta: 'Bizimle Konuşun',
     popular: false,
   },
 ]
 
-const containerVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.12 } } }
-const cardVariants = {
+const containerV = { hidden: {}, visible: { transition: { staggerChildren: 0.12 } } }
+const cardV = {
   hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
 }
 
 export default function Pricing() {
   const [annual, setAnnual] = useState(false)
 
   return (
-    <section id="pricing" className="relative py-32 overflow-hidden">
-      <div className="absolute inset-0 section-bg" />
-      <div className="absolute inset-0 bg-dots opacity-20" />
-      <div className="orb orb-em" style={{ width: 500, height: 500, bottom: '0%', right: '-10%', opacity: 0.08 }} />
+    <section id="pricing" className="relative py-32 overflow-hidden section-bg">
+      <div className="absolute -bottom-40 -right-20 w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.06), transparent 70%)', filter: 'blur(40px)' }} />
 
       <div className="relative max-w-7xl mx-auto px-6">
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 28 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
-          transition={{ duration: 0.6 }}
+          viewport={{ once: true, margin: '-70px' }}
+          transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
           className="text-center mb-14"
         >
           <span className="section-label mb-4 inline-flex">
-            <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: '#34d399' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 inline-block" />
             Şeffaf Fiyatlandırma
           </span>
-          <h2 className="text-4xl sm:text-5xl font-black mt-4 tracking-tight">
+          <h2 className="text-4xl sm:text-5xl font-bold mt-4 tracking-tight" style={{ fontFamily: 'Space Grotesk, Inter, sans-serif' }}>
             <span className="text-white">İhtiyacınıza </span>
-            <span className="gradient-text">Uygun Plan</span>
+            <GradientText>Uygun Plan</GradientText>
           </h2>
-          <p className="mt-5 text-gray-400 text-lg max-w-xl mx-auto">
+          <p className="mt-5 text-slate-400 text-lg max-w-xl mx-auto">
             Gizli ücret yok. İstediğiniz zaman plan değişikliği yapabilirsiniz.
           </p>
 
+          {/* Toggle */}
           <div className="flex items-center justify-center gap-4 mt-8">
-            <span className={`text-sm ${!annual ? 'text-white' : 'text-gray-500'}`}>Aylık</span>
+            <span className={`text-sm ${!annual ? 'text-white' : 'text-slate-500'}`}>Aylık</span>
             <button
               onClick={() => setAnnual(!annual)}
               className="relative w-12 h-6 rounded-full transition-colors duration-300"
-              style={{ background: annual ? '#047857' : 'rgba(255,255,255,0.1)' }}
+              style={{ background: annual ? '#7c3aed' : 'rgba(255,255,255,0.1)' }}
             >
-              <span
-                className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all duration-300 shadow"
-                style={{ left: annual ? '28px' : '4px' }}
+              <motion.span
+                animate={{ left: annual ? '28px' : '4px' }}
+                transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+                className="absolute top-1 w-4 h-4 rounded-full bg-white shadow"
+                style={{ position: 'absolute' }}
               />
             </button>
-            <span className={`text-sm flex items-center gap-2 ${annual ? 'text-white' : 'text-gray-500'}`}>
+            <span className={`text-sm flex items-center gap-2 ${annual ? 'text-white' : 'text-slate-500'}`}>
               Yıllık
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/15 text-green-400 border border-green-500/25">
                 %20 İndirim
@@ -116,84 +103,117 @@ export default function Pricing() {
         </motion.div>
 
         <motion.div
-          variants={containerVariants}
+          variants={containerV}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: '-60px' }}
           className="grid grid-cols-1 md:grid-cols-3 gap-6"
         >
-          {plans.map((plan) => (
-            <motion.div key={plan.name} variants={cardVariants} className={`pricing-card relative ${plan.popular ? 'popular' : ''}`}>
+          {PLANS.map(plan => (
+            <motion.div
+              key={plan.name}
+              variants={cardV}
+              whileHover={{ y: plan.popular ? -10 : -6 }}
+              className={`relative rounded-2xl p-8 transition-all duration-300 ${plan.popular ? 'scale-[1.03]' : ''}`}
+              style={{
+                background: plan.popular ? 'rgba(124,58,237,0.08)' : 'rgba(255,255,255,0.025)',
+                border: `1px solid ${plan.popular ? plan.colorBorder : 'rgba(255,255,255,0.06)'}`,
+                boxShadow: plan.popular ? '0 0 40px rgba(124,58,237,0.12)' : 'none',
+              }}
+            >
+              {/* Popular gradient border */}
               {plan.popular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-                  <span
-                    className="px-4 py-1 rounded-full text-xs font-bold text-white shadow-lg"
-                    style={{ background: 'linear-gradient(135deg, #047857, #10b981)' }}
-                  >
-                    En Popüler
-                  </span>
-                </div>
+                <>
+                  <div
+                    className="absolute -inset-[1px] rounded-[17px] -z-10"
+                    style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.5), rgba(59,130,246,0.3))' }}
+                  />
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                    <span
+                      className="px-4 py-1 rounded-full text-xs font-bold text-white shadow-lg"
+                      style={{ background: 'linear-gradient(135deg, #7c3aed, #3b82f6)' }}
+                    >
+                      En Popüler
+                    </span>
+                  </div>
+                </>
               )}
 
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: plan.color, boxShadow: `0 0 8px ${plan.color}` }} />
-                  <span className="text-sm font-semibold" style={{ color: plan.color }}>{plan.name}</span>
-                </div>
-
-                <div className="mb-2">
-                  {plan.price.monthly ? (
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-black text-white">
-                        ₺{annual ? plan.price.annual : plan.price.monthly}
-                      </span>
-                      <span className="text-gray-500 text-sm">/ay</span>
-                    </div>
-                  ) : (
-                    <div className="text-3xl font-black text-white">Özel Fiyat</div>
-                  )}
-                  {annual && plan.price.monthly && (
-                    <div className="text-xs text-gray-500 mt-1">
-                      <s className="text-gray-600">₺{plan.price.monthly}</s> yıllık faturalama ile
-                    </div>
-                  )}
-                </div>
-
-                <div
-                  className="text-xs font-mono px-3 py-1 rounded-full inline-block mb-3"
-                  style={{ background: `${plan.color}15`, color: plan.color, border: `1px solid ${plan.color}30` }}
-                >
-                  {plan.credits}
-                </div>
-
-                <p className="text-gray-400 text-sm">{plan.description}</p>
+              {/* Plan name */}
+              <div className="flex items-center gap-2 mb-4">
+                <span
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ background: plan.color, boxShadow: `0 0 8px ${plan.color}` }}
+                />
+                <span className="text-sm font-semibold" style={{ color: plan.color }}>{plan.name}</span>
               </div>
 
+              {/* Price */}
+              <div className="mb-4">
+                {plan.monthly ? (
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={annual ? 'annual' : 'monthly'}
+                      initial={{ opacity: 0, y: -8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 8 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex items-baseline gap-1"
+                    >
+                      <span className="text-4xl font-black text-white">
+                        ₺{annual ? plan.yearly : plan.monthly}
+                      </span>
+                      <span className="text-slate-500 text-sm">/ay</span>
+                    </motion.div>
+                  </AnimatePresence>
+                ) : (
+                  <div className="text-3xl font-black text-white">Özel Fiyat</div>
+                )}
+                {annual && plan.monthly && (
+                  <div className="text-xs text-slate-500 mt-1">
+                    Yıllık faturalama ile {' '}
+                    <span className="text-green-400 font-medium">
+                      ₺{(plan.monthly - plan.yearly!) * 12} tasarruf
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div
+                className="text-xs font-mono px-3 py-1 rounded-full inline-block mb-4"
+                style={{ background: plan.colorBg, color: plan.color, border: `1px solid ${plan.colorBorder}` }}
+              >
+                {plan.credits}
+              </div>
+
+              <p className="text-slate-400 text-sm mb-6">{plan.description}</p>
+
               <ul className="space-y-2.5 mb-8">
-                {plan.features.map((feat) => (
+                {plan.features.map(feat => (
                   <li key={feat} className="flex items-center gap-3 text-sm">
-                    <svg className="w-4 h-4 flex-shrink-0" style={{ color: plan.color }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                    <span className="text-gray-300">{feat}</span>
+                    <Check className="w-4 h-4 flex-shrink-0" style={{ color: plan.color }} />
+                    <span className="text-slate-300">{feat}</span>
                   </li>
                 ))}
               </ul>
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
                 className={`w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
-                  plan.popular
-                    ? 'text-white hover:shadow-lg'
-                    : 'border text-white/80 hover:bg-white/[0.04]'
+                  plan.popular ? 'text-white' : 'border text-white/80 hover:text-white'
                 }`}
                 style={
                   plan.popular
-                    ? { background: 'linear-gradient(135deg, #047857, #10b981)', boxShadow: '0 4px 20px rgba(4,120,87,0.3)' }
-                    : { borderColor: 'rgba(255,255,255,0.1)' }
+                    ? {
+                        background: 'linear-gradient(135deg, #7c3aed, #3b82f6)',
+                        boxShadow: '0 0 20px rgba(124,58,237,0.4)',
+                      }
+                    : { borderColor: 'rgba(255,255,255,0.12)' }
                 }
               >
                 {plan.cta}
-              </button>
+              </motion.button>
             </motion.div>
           ))}
         </motion.div>
@@ -203,7 +223,7 @@ export default function Pricing() {
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.4 }}
-          className="text-center text-gray-600 text-sm mt-10"
+          className="text-center text-slate-600 text-sm mt-10"
         >
           Tüm planlarda 14 gün ücretsiz deneme. Kredi kartı gerektirmez.
         </motion.p>
